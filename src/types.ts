@@ -9,6 +9,8 @@ export interface Expense {
   isRecurring: boolean;
   imported: boolean;
   createdAt: number; // millisecond timestamp
+  isSplit?: boolean;
+  flagged?: boolean;
 }
 
 export interface Income {

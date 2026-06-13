@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, BudgetLimit } from '../types';
 import { ThemeSelector } from './ThemeSelector';
-import { X, Save, ShieldAlert } from 'lucide-react';
+import { X, Save, ShieldAlert, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 interface SettingsDrawerProps {
@@ -9,8 +9,10 @@ interface SettingsDrawerProps {
   onClose: () => void;
   settings: Settings;
   limits: BudgetLimit[];
+  recurringExpenses: any[];
   onSaveSettings: (settings: Partial<Settings>) => Promise<void>;
   onSaveLimit: (id: string, limit: number) => Promise<void>;
+  onDeleteRecurringExpense: (id: string) => Promise<void>;
 }
 
 export function SettingsDrawer({
@@ -18,8 +20,10 @@ export function SettingsDrawer({
   onClose,
   settings,
   limits,
+  recurringExpenses,
   onSaveSettings,
   onSaveLimit,
+  onDeleteRecurringExpense,
 }: SettingsDrawerProps) {
   // Local state for system-wide adjustments
   const [budgetCeiling, setBudgetCeiling] = useState(String(settings.budgetCeiling));
@@ -228,6 +232,56 @@ export function SettingsDrawer({
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* Section: Manage Recurring Templates */}
+          <section className="space-y-4" id="settings-manage-recurring">
+            <div className="text-[11px] sm:text-xs font-mono tracking-[0.25em] uppercase text-[var(--accent)] border-b border-[var(--line)] pb-3 font-bold">
+              Manage Recurring Charges
+            </div>
+
+            {recurringExpenses.length === 0 ? (
+              <p className="text-[10px] sm:text-[11px] font-mono text-center text-zinc-600 py-4 uppercase">
+                No active recurring templates
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {recurringExpenses.map((re) => (
+                  <div
+                    key={re.id}
+                    id={`manage-recurring-item-${re.id}`}
+                    className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-[var(--line)] bg-[var(--bg2)] shadow-sm text-left"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="text-[11px] sm:text-xs font-sans font-bold text-white truncate">
+                        {re.description}
+                      </div>
+                      <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 font-semibold">
+                        {re.category} · Day {re.dayOfMonth}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="font-mono text-xs font-bold text-[#ffb020] pr-1">
+                        {formatCurrency(re.amount)}
+                      </span>
+                      <button
+                        id={`delete-recurring-btn-${re.id}`}
+                        onClick={() => {
+                          if (confirm('Delete this recurring template? FUTURE months will not instantiate this. Current month is unaffected.')) {
+                            onDeleteRecurringExpense(re.id);
+                          }
+                        }}
+                        className="p-2 border border-[#221e17] hover:border-red-500/30 hover:text-red-500 rounded-lg bg-[#100f0d] cursor-pointer text-zinc-500 transition-colors"
+                        title="Remove Template"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Section 4: About */}

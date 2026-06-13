@@ -5,6 +5,63 @@ export default async function handler(req: any, res: any) {
     verifyToken(req);
     const dbObj = getDb();
     
+    // Check if this is a recurring template collection request
+    if (req.query?.recurring === 'true') {
+      if (req.method === 'GET') {
+        let list: any[] = [];
+        if (dbObj.isMock) {
+          list = await dbObj.getCollection('recurringExpenses');
+        } else {
+          const snap = await dbObj.realDb!.collection('recurringExpenses').get();
+          list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+        return res.status(200).json(list);
+      }
+
+      if (req.method === 'POST') {
+        const { category, description, amount, dayOfMonth } = req.body || {};
+        if (!category || !description || amount === undefined) {
+          return res.status(400).json({ error: 'Missing required recurring fields' });
+        }
+        const newId = dbObj.isMock
+          ? Math.random().toString(36).substring(2, 11)
+          : dbObj.realDb!.collection('recurringExpenses').doc().id;
+        const newRecurring = {
+          id: newId,
+          category,
+          description,
+          amount: Number(amount),
+          dayOfMonth: Number(dayOfMonth) || new Date().getDate(),
+          createdAt: Date.now()
+        };
+        if (dbObj.isMock) {
+          const existing = await dbObj.getCollection('recurringExpenses');
+          existing.unshift(newRecurring);
+          await dbObj.saveCollection('recurringExpenses', existing);
+        } else {
+          await dbObj.realDb!.collection('recurringExpenses').doc(newId).set(newRecurring);
+        }
+        return res.status(201).json(newRecurring);
+      }
+
+      if (req.method === 'DELETE') {
+        const id = req.query.id || req.params?.id;
+        if (!id) {
+          return res.status(400).json({ error: 'Id parameter is required' });
+        }
+        if (dbObj.isMock) {
+          const existing = await dbObj.getCollection('recurringExpenses');
+          const filtered = existing.filter((e: any) => e.id !== id);
+          await dbObj.saveCollection('recurringExpenses', filtered);
+        } else {
+          await dbObj.realDb!.collection('recurringExpenses').doc(id).delete();
+        }
+        return res.status(200).json({ success: true });
+      }
+
+      return res.status(405).end('Method Not Allowed');
+    }
+    
     if (req.method === 'GET') {
       const { month } = req.query || {};
       if (!month) {
@@ -28,7 +85,7 @@ export default async function handler(req: any, res: any) {
     } 
     
     if (req.method === 'POST') {
-      const { monthKey, category, description, amount, date, note, isRecurring, imported } = req.body || {};
+      const { monthKey, category, description, amount, date, note, isRecurring, imported, isSplit } = req.body || {};
       
       if (!monthKey || !category || !description || amount === undefined || !date) {
         return res.status(400).json({ error: 'Missing required expense fields' });
@@ -53,6 +110,7 @@ export default async function handler(req: any, res: any) {
         note: note || '',
         isRecurring: !!isRecurring,
         imported: !!imported,
+        isSplit: !!isSplit,
         createdAt: Date.now()
       };
       
@@ -62,6 +120,28 @@ export default async function handler(req: any, res: any) {
         await dbObj.saveCollection('expenses', existing);
       } else {
         await dbObj.realDb!.collection('expenses').doc(newId).set(newExpense);
+      }
+      
+      // Persist recurring templates if flagged
+      if (isRecurring) {
+        const recId = dbObj.isMock
+          ? Math.random().toString(36).substring(2, 11)
+          : dbObj.realDb!.collection('recurringExpenses').doc().id;
+        const newRecurring = {
+          id: recId,
+          category,
+          description,
+          amount: Number(amount),
+          dayOfMonth: new Date().getDate(),
+          createdAt: Date.now()
+        };
+        if (dbObj.isMock) {
+          const existingRec = await dbObj.getCollection('recurringExpenses');
+          existingRec.unshift(newRecurring);
+          await dbObj.saveCollection('recurringExpenses', existingRec);
+        } else {
+          await dbObj.realDb!.collection('recurringExpenses').doc(recId).set(newRecurring);
+        }
       }
       
       return res.status(201).json(newExpense);

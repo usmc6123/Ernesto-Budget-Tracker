@@ -34,7 +34,7 @@ export default async function handler(req: any, res: any) {
     }
     
     if (req.method === 'PUT') {
-      const { category, description, amount, date, note, isRecurring } = req.body || {};
+      const { category, description, amount, date, note, isRecurring, flagged } = req.body || {};
       
       const updatedItem = {
         ...existingItem,
@@ -44,6 +44,7 @@ export default async function handler(req: any, res: any) {
         date: date !== undefined ? date : existingItem.date,
         note: note !== undefined ? note : existingItem.note,
         isRecurring: isRecurring !== undefined ? !!isRecurring : existingItem.isRecurring,
+        flagged: flagged !== undefined ? !!flagged : existingItem.flagged,
       };
       
       if (dbObj.isMock) {

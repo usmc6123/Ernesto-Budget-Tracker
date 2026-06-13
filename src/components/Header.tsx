@@ -1,11 +1,21 @@
 import { Settings } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
 
 interface HeaderProps {
   onOpenSettings: () => void;
   saveStatus: 'synced' | 'saving' | 'offline';
+  totalSpent?: number;
+  budgetCeiling?: number;
+  hideTicker?: boolean;
 }
 
-export function Header({ onOpenSettings, saveStatus }: HeaderProps) {
+export function Header({
+  onOpenSettings,
+  saveStatus,
+  totalSpent,
+  budgetCeiling,
+  hideTicker = false,
+}: HeaderProps) {
   const getStatusColor = () => {
     switch (saveStatus) {
       case 'synced':
@@ -28,6 +38,17 @@ export function Header({ onOpenSettings, saveStatus }: HeaderProps) {
     }
   };
 
+  const calculateTickerColor = (spent: number, ceiling: number) => {
+    if (ceiling <= 0) return 'text-[var(--text3)]';
+    const pct = spent / ceiling;
+    if (pct >= 1.0) return 'text-[#ef4444] font-extrabold';
+    if (pct >= 0.8) return 'text-[#ffb020] animate-pulse';
+    if (pct >= 0.6) return 'text-[#ffe099]';
+    return 'text-[var(--text3)]';
+  };
+
+  const hasTickerValues = totalSpent !== undefined && budgetCeiling !== undefined;
+
   return (
     <header className="relative overflow-hidden border-b border-[var(--line)] px-6 sm:px-8 pt-16 pb-12 bg-[var(--bg)]" id="app-header">
       {/* Dynamic low-opacity accent border line */}
@@ -40,20 +61,37 @@ export function Header({ onOpenSettings, saveStatus }: HeaderProps) {
             B<span className="text-[#ffe099] -ml-2 italic font-light">T</span>
           </div>
           <div>
-            <div className="text-[11px] sm:text-xs font-mono tracking-[0.35em] uppercase text-[var(--text2)] mb-1 sm:mb-2">
+            <div className="text-[11px] sm:text-xs font-mono tracking-[0.35em] uppercase text-[var(--text2)] mb-1 sm:mb-2 text-left">
               E. Reyes · Personal Ledger
             </div>
-            <h1 className="font-serif text-3xl sm:text-5xl font-light tracking-tight text-[var(--bone)]">
+            <h1 className="font-serif text-3xl sm:text-5xl font-light tracking-tight text-[var(--bone)] text-left">
               Budget <span className="font-semibold italic text-[var(--accent)]">Tracker</span>
             </h1>
-            <div className="flex items-center gap-4 mt-2">
-              <span className="text-[11px] sm:text-xs font-mono tracking-widest uppercase text-[var(--text2)]">
-                2026 · Full Year
-              </span>
-              <span className="text-xs text-[var(--line)]">|</span>
-              <span className={`text-[11px] sm:text-xs font-mono tracking-widest uppercase font-bold transition-colors ${getStatusColor()}`} id="sync-status">
-                {getStatusText()}
-              </span>
+            <div className="flex flex-col items-start gap-1.5 mt-2">
+              <div className="flex items-center gap-4">
+                <span className="text-[11px] sm:text-xs font-mono tracking-widest uppercase text-[var(--text2)]">
+                  2026 · Full Year
+                </span>
+                <span className="text-xs text-[var(--line)]">|</span>
+                <span className={`text-[11px] sm:text-xs font-mono tracking-widest uppercase font-bold transition-colors ${getStatusColor()}`} id="sync-status">
+                  {getStatusText()}
+                </span>
+              </div>
+              
+              {/* Responsive live-updating spending ticker */}
+              {!hideTicker && hasTickerValues && (
+                <div 
+                  id="header-spending-ticker"
+                  className={`font-mono text-[9px] sm:text-[10px] tracking-widest uppercase font-bold text-left transition-all duration-300 mt-1 ${calculateTickerColor(totalSpent!, budgetCeiling!)}`}
+                >
+                  Spent {formatCurrency(totalSpent!)} of {formatCurrency(budgetCeiling!)} Ceiling —{' '}
+                  {budgetCeiling! >= totalSpent! ? (
+                    <span>{formatCurrency(budgetCeiling! - totalSpent!)} Remaining</span>
+                  ) : (
+                    <span>Over Limit by {formatCurrency(totalSpent! - budgetCeiling!)}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

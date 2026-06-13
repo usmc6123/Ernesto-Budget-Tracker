@@ -38,6 +38,19 @@ async function startServer() {
     return expensesIdHandler(req, res);
   });
 
+  app.get('/api/recurring-expenses', (req, res) => {
+    req.query = { ...req.query, recurring: 'true' };
+    return expensesHandler(req, res);
+  });
+  app.post('/api/recurring-expenses', (req, res) => {
+    req.query = { ...req.query, recurring: 'true' };
+    return expensesHandler(req, res);
+  });
+  app.delete('/api/recurring-expenses/:id', (req, res) => {
+    req.query = { ...req.query, recurring: 'true', id: req.params.id };
+    return expensesHandler(req, res);
+  });
+
   app.get('/api/income', incomeHandler);
   app.post('/api/income', incomeHandler);
   app.delete('/api/income/:id', (req, res) => {

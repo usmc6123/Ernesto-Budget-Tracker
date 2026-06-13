@@ -102,6 +102,7 @@ export const api = {
     date?: string;
     note?: string;
     isRecurring?: boolean;
+    flagged?: boolean;
   }) {
     return apiFetch(`/api/expenses/${id}`, {
       method: 'PUT',
@@ -111,6 +112,28 @@ export const api = {
 
   async deleteExpense(id: string) {
     return apiFetch(`/api/expenses/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getRecurringExpenses() {
+    return apiFetch('/api/recurring-expenses');
+  },
+
+  async createRecurringExpense(expense: {
+    category: string;
+    description: string;
+    amount: number;
+    dayOfMonth: number;
+  }) {
+    return apiFetch('/api/recurring-expenses', {
+      method: 'POST',
+      body: JSON.stringify(expense),
+    });
+  },
+
+  async deleteRecurringExpense(id: string) {
+    return apiFetch(`/api/recurring-expenses/${id}`, {
       method: 'DELETE',
     });
   },

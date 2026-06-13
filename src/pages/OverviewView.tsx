@@ -1,25 +1,31 @@
-import { useState, useEffect } from 'react';
-import { YTDStats, BudgetLimit } from '../types';
+import React, { useState } from 'react';
+import { YTDStats, BudgetLimit, Expense } from '../types';
 import { formatCurrency, MONTHS, CAT_COLORS } from '../lib/utils';
-import { TrendingUp, BarChart3, ChevronRight, Activity } from 'lucide-react';
+import { TrendingUp, BarChart3, ChevronRight, Activity, PieChart as PieIcon, Award, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 interface OverviewViewProps {
   stats: YTDStats | null;
   limits: BudgetLimit[];
+  expenses: Expense[];
   onSelectMonth: (monthIndex: number) => void;
   onViewChange: (view: 'budget' | 'overview') => void;
   selectedMonthIndex: number;
+  onUpdateExpense?: (id: string, updates: Partial<Expense>) => Promise<void>;
 }
 
 export function OverviewView({
   stats,
   limits,
+  expenses,
   onSelectMonth,
   onViewChange,
   selectedMonthIndex,
+  onUpdateExpense,
 }: OverviewViewProps) {
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('All');
   const [hoveredDataPoint, setHoveredDataPoint] = useState<{ x: number; y: number; val: number; label: string } | null>(null);
+  const [expandedExpenses, setExpandedExpenses] = useState<{ [id: string]: boolean }>({});
 
   if (!stats) {
     return (
@@ -59,12 +65,62 @@ export function OverviewView({
     };
   });
 
-  // Calculate high value for SVG graph heights normalization (limit clamp to prevent dividing by 0)
+  // Calculate high value for SVG graph heights normalization
   const maxTrendVal = Math.max(...trendDataPoints.map((d) => d.value), 100) * 1.15;
 
-  // Render comparative category limit list for the current selected month index
   const activeMonthSummaryKey = `2026-${String(selectedMonthIndex + 1).padStart(2, '0')}`;
   const selectedMonthSpends = categorySpendsByMonth?.[activeMonthSummaryKey] || {};
+
+  // Doughnut Pie Chart configuration parameters
+  const pieData = limits
+    .map((l) => {
+      const spent = selectedMonthSpends[l.category] || 0;
+      return {
+        name: l.category,
+        value: spent,
+        color: l.color,
+      };
+    })
+    .filter((pt) => pt.value > 0);
+
+  const totalPieSpent = pieData.reduce((sum, item) => sum + item.value, 0);
+
+  const CustomPieTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const pct = totalPieSpent > 0 ? ((data.value / totalPieSpent) * 100).toFixed(1) : '0';
+      return (
+        <div className="bg-[#0e0d0b] border border-[#ffb020]/35 p-3 rounded-lg font-mono text-[10px] uppercase tracking-wider text-left space-y-1 shadow-2xl">
+          <div className="text-zinc-500 font-bold">{data.name}</div>
+          <div className="text-[#ffe099] font-black">{formatCurrency(data.value)}</div>
+          <div className="text-[#10b981]">{pct}% of total</div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Top 5 highest expenses for this active monthly cycle
+  const topExpenses = [...expenses]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
+  const toggleExpenseExpand = (id: string) => {
+    setExpandedExpenses((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleUpdatePriority = async (e: React.MouseEvent, item: Expense) => {
+    e.stopPropagation();
+    if (!onUpdateExpense) return;
+    try {
+      await onUpdateExpense(item.id, { flagged: !item.flagged });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div id="overview-viewport-container" className="space-y-8 animate-fade-in pb-16">
@@ -293,6 +349,101 @@ export function OverviewView({
         </div>
       </section>
 
+      {/* Doughnut Pie Chart Section */}
+      <section className="max-w-4xl mx-auto px-6 sm:px-8 space-y-5" id="reports-category-doughnut">
+        <div className="flex justify-between items-center border-b border-[var(--line)] pb-4">
+          <div className="flex items-center gap-2.5">
+            <PieIcon size={16} className="text-[var(--accent)]" />
+            <h3 className="font-serif text-lg sm:text-xl font-light text-[var(--bone)]">
+              {MONTHS[selectedMonthIndex]} · Category Shares
+            </h3>
+          </div>
+
+          {activeCategoryFilter !== 'All' && (
+            <button
+              onClick={() => setActiveCategoryFilter('All')}
+              className="text-[10px] sm:text-[11px] font-mono tracking-widest text-[var(--accent)] hover:underline uppercase py-1 px-2.5 border border-[#ffb020]/20 rounded-xl bg-[#ffb020]/5 cursor-pointer font-bold"
+            >
+              Show All Categories
+            </button>
+          )}
+        </div>
+
+        <div className="bg-[var(--bg2)] border border-[var(--line)] rounded-2xl p-6 sm:p-8 shadow-md">
+          {pieData.length === 0 ? (
+            <div className="text-center py-12 text-zinc-500 font-mono text-xs uppercase tracking-wider">
+              No transactions registered for this month yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Doughnut Canvas Side */}
+              <div className="md:col-span-5 h-[200px] flex items-center justify-center relative justify-self-center">
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={75}
+                      paddingAngle={4}
+                      dataKey="value"
+                      onClick={(data) => {
+                        if (data && data.name) {
+                          setActiveCategoryFilter(data.name);
+                        }
+                      }}
+                      className="cursor-pointer"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--bg2)" strokeWidth={2.5} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip content={<CustomPieTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Total spending central ring absolute tag */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+                  <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest font-bold">SPENT</span>
+                  <span className="text-sm font-mono font-black text-white">{formatCurrency(totalPieSpent)}</span>
+                </div>
+              </div>
+
+              {/* Legend Column Side */}
+              <div className="md:col-span-7 flex flex-col gap-2.5 justify-center max-h-[220px] overflow-y-auto pr-2">
+                {pieData.map((item) => {
+                  const isSelected = activeCategoryFilter === item.name;
+                  const pct = totalPieSpent > 0 ? ((item.value / totalPieSpent) * 100).toFixed(0) : '0';
+                  
+                  return (
+                    <div
+                      key={item.name}
+                      onClick={() => setActiveCategoryFilter(item.name)}
+                      className={`flex items-center justify-between gap-3 text-[10px] font-mono uppercase font-bold cursor-pointer hover:text-white transition py-2 px-3 border rounded-xl ${
+                        isSelected 
+                          ? 'border-[#ffb020] bg-[#ffb020]/5 text-white shadow-[0_0_10px_rgba(255,176,32,0.02)]' 
+                          : 'border-[#221e17] bg-[#100f0d]/40 text-zinc-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                        <span className="truncate text-white">{item.name}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <span className="text-[#ffe099]">{formatCurrency(item.value)}</span>
+                        <span className="text-zinc-500 italic text-[9px] min-w-[24px] text-right font-semibold">{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Comparative Budget vs Actual Bar Chart for Selected Month */}
       <section className="max-w-4xl mx-auto px-6 sm:px-8 space-y-5" id="selected-month-budget-vs-actual">
         <div className="flex items-center gap-2.5 border-b border-[var(--line)] pb-4">
@@ -303,12 +454,20 @@ export function OverviewView({
         </div>
 
         <div className="bg-[var(--bg2)] border border-[var(--line)] rounded-2xl p-6 sm:p-8 space-y-5 shadow-md" id="budget-bar-comparison-list">
-          {limits.length === 0 ? (
-            <p className="text-xs font-mono text-center text-[var(--text3)] py-6">
-              Category limits map is empty.
-            </p>
-          ) : (
-            limits.map((l) => {
+          {(() => {
+            const displayedLimits = activeCategoryFilter === 'All' 
+              ? limits 
+              : limits.filter(l => l.category === activeCategoryFilter);
+
+            if (displayedLimits.length === 0) {
+              return (
+                <p className="text-xs font-mono text-center text-zinc-500 py-6">
+                  {activeCategoryFilter === 'All' ? 'Category limits map is empty.' : 'No data for this category.'}
+                </p>
+              );
+            }
+
+            return displayedLimits.map((l) => {
               const spent = selectedMonthSpends[l.category] || 0;
               const limit = l.limit;
               const isOver = spent > limit;
@@ -348,6 +507,112 @@ export function OverviewView({
                       </div>
                     )}
                   </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      </section>
+
+      {/* Section: Biggest Monthly Expenses (Interactive Top 5 highest) */}
+      <section className="max-w-4xl mx-auto px-6 sm:px-8 space-y-5" id="reports-biggest-expenses">
+        <div className="flex justify-between items-center border-b border-[var(--line)] pb-4">
+          <div className="flex items-center gap-2.5">
+            <Award size={16} className="text-[var(--accent)] text-[#ffb020]" />
+            <h3 className="font-serif text-lg sm:text-xl font-light text-[var(--bone)] uppercase tracking-wide">
+              BIGGEST MONTHLY EXPENSES
+            </h3>
+          </div>
+        </div>
+
+        <div className="flex flex-col border border-[var(--line)] rounded-2xl overflow-hidden bg-[var(--bg2)] divide-y divide-[var(--line)] shadow-md">
+          {topExpenses.length === 0 ? (
+            <div className="p-8 text-center text-xs font-mono tracking-widest uppercase text-zinc-600">
+              No entries logged for this period
+            </div>
+          ) : (
+            topExpenses.map((exp) => {
+              const isExpanded = !!expandedExpenses[exp.id];
+              const categoryColor = CAT_COLORS[exp.category] || '#8c867a';
+              return (
+                <div 
+                  key={exp.id} 
+                  id={`biggest-expense-row-${exp.id}`}
+                  className={`flex flex-col px-6 py-5 cursor-pointer hover:bg-[var(--bg3)]/30 transition-all ${
+                    exp.flagged ? 'bg-[#ffb020]/5 border-l-2 border-[#ffb020]' : ''
+                  }`}
+                  onClick={() => toggleExpenseExpand(exp.id)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="min-w-0 pr-3 flex-grow text-left">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="font-sans text-[14px] sm:text-base font-bold text-white truncate">
+                          {exp.description}
+                        </span>
+                        {exp.flagged && (
+                          <span className="text-[8px] font-mono tracking-widest uppercase bg-[#ffb020] text-black font-black px-1.5 py-0.5 rounded shadow-sm">
+                            Priority
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] font-mono uppercase text-zinc-500 mt-1">
+                        <span>{exp.date}</span>
+                        <span>·</span>
+                        <span style={{ color: categoryColor }} className="font-bold">{exp.category}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <span className="font-mono text-sm sm:text-base font-black text-rose-500">
+                        {formatCurrency(exp.amount)}
+                      </span>
+                      <div className="text-zinc-500">
+                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top expense collapsed details section */}
+                  {isExpanded && (
+                    <div className="mt-4 pt-4 border-t border-[#221e17] text-left font-mono text-[10.5px] uppercase tracking-wider space-y-3.5 bg-[#100f0d]/40 p-4 rounded-xl border border-[#221e17]">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-zinc-600 font-bold block">Private Note</span>
+                        <span className="italic text-[#fcfaf2] lowercase leading-relaxed text-[11px] block mt-0.5">
+                          {exp.note ? exp.note : 'no private note recorded'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-[9px] border-t border-[#1a1814] pt-2.5">
+                        <div>
+                          <span className="text-zinc-600 font-bold block">Recorded Cycle Date</span>
+                          <span className="text-[var(--text2)] block mt-0.5">{exp.date}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-600 font-bold block">Transaction Database Identifier</span>
+                          <span className="text-[9px] text-[var(--text3)] text-zinc-600 font-mono block mt-0.5 select-all">
+                            ID: {exp.id}
+                          </span>
+                        </div>
+                      </div>
+
+                      {onUpdateExpense && (
+                        <div className="border-t border-[#1a1814] pt-3.5 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={(evt) => handleUpdatePriority(evt, exp)}
+                            className={`px-3 py-1.5 rounded-lg border text-[9px] uppercase tracking-widest font-black font-mono transition flex items-center gap-1.5 cursor-pointer ${
+                              exp.flagged
+                                ? 'bg-[#ffb020]/20 border-[#ffb020]/40 text-[#ffb020] hover:bg-[#ffb020]/30'
+                                : 'bg-[#181612] border-[#221e17] text-zinc-500 hover:text-white hover:border-zinc-700'
+                            }`}
+                          >
+                            <Star size={10} fill={exp.flagged ? 'currentColor' : 'none'} />
+                            {exp.flagged ? 'Unflag High Priority' : 'Flag High Priority'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })

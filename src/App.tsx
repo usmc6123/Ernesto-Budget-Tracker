@@ -16,6 +16,8 @@ import { MonthNav } from './components/MonthNav';
 import { BottomNav } from './components/BottomNav';
 import { SettingsDrawer } from './components/SettingsDrawer';
 import { ReceiptScannerModal } from './components/ReceiptScannerModal';
+import { SplitTransactionModal } from './components/SplitTransactionModal';
+import { RecurringChargesModal } from './components/RecurringChargesModal';
 
 import { LogOut } from 'lucide-react';
 
@@ -27,6 +29,10 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isReceiptScannerOpen, setIsReceiptScannerOpen] = useState(false);
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+  const [recurringExpenses, setRecurringExpenses] = useState<any[]>([]);
+  const [shownMonths, setShownMonths] = useState<string[]>([]);
 
   // Core Finance State
   const [settings, setSettings] = useState<Settings>({
@@ -64,12 +70,13 @@ export default function App() {
     
     try {
       // Execute fetches in parallel to optimize response speed
-      const [userSettings, fetchedLimits, monthExpenses, monthIncomes, aggregatedStats] = await Promise.all([
+      const [userSettings, fetchedLimits, monthExpenses, monthIncomes, aggregatedStats, recList] = await Promise.all([
         api.getSettings(),
         api.getBudgetLimits(),
         api.getExpenses(monthKey),
         api.getIncome(monthKey),
         api.getStats(),
+        api.getRecurringExpenses(),
       ]);
 
       setSettings(userSettings);
@@ -77,6 +84,14 @@ export default function App() {
       setExpenses(monthExpenses);
       setIncomes(monthIncomes);
       setStats(aggregatedStats);
+      setRecurringExpenses(recList || []);
+
+      // Check if this month has zero entries, templates exist, and we haven't prompted user yet
+      if (monthExpenses.length === 0 && recList && recList.length > 0 && !shownMonths.includes(monthKey)) {
+        setIsRecurringModalOpen(true);
+        // Save the month key in session state so it only displays once
+        setShownMonths((prev) => [...prev, monthKey]);
+      }
 
       // Store dynamic theme globally
       applyTheme(userSettings.theme);
@@ -233,6 +248,35 @@ export default function App() {
     }
   };
 
+  const handleUpdateExpense = async (id: string, updates: Partial<Expense>) => {
+    setSaveStatus('saving');
+    try {
+      await api.updateExpense(id, updates);
+      triggerToast('Ledger updated');
+      await fetchLedgerData(currentMonthIndex);
+    } catch (err: any) {
+      setSaveStatus('offline');
+      triggerToast(err.message || 'Update failed');
+    }
+  };
+
+  const handleDeleteRecurringExpense = async (id: string) => {
+    setSaveStatus('saving');
+    try {
+      await api.deleteRecurringExpense(id);
+      triggerToast('Recurring template deleted');
+      // reload lists
+      const recList = await api.getRecurringExpenses();
+      setRecurringExpenses(recList || []);
+      setSaveStatus('synced');
+    } catch (err: any) {
+      setSaveStatus('offline');
+      triggerToast('Failed to delete template');
+    }
+  };
+
+  const totalSpentAmt = expenses.reduce((sum, e) => sum + e.amount, 0);
+
   if (!authed) {
     return <Login onLoginSuccess={handleLoginSuccess} apiLogin={api.login} />;
   }
@@ -241,7 +285,12 @@ export default function App() {
     <div className="flex flex-col min-h-screen bg-[var(--bg)] text-[var(--text)] font-mono transition-all duration-300 relative select-none">
       
       {/* Upper Navigation Row */}
-      <Header onOpenSettings={() => setIsSettingsOpen(true)} saveStatus={saveStatus} />
+      <Header 
+        onOpenSettings={() => setIsSettingsOpen(true)} 
+        saveStatus={saveStatus} 
+        totalSpent={totalSpentAmt} 
+        budgetCeiling={settings.budgetCeiling}
+      />
       
       <MonthNav
         currentMonth={currentMonthIndex}
@@ -262,15 +311,19 @@ export default function App() {
             onAddExpense={handleAddExpense}
             onAddIncome={handleAddIncome}
             onDeleteExpense={handleDeleteExpense}
+            onUpdateExpense={handleUpdateExpense}
             onOpenReceiptScanner={() => setIsReceiptScannerOpen(true)}
+            onOpenSplitModal={() => setIsSplitModalOpen(true)}
           />
         ) : (
           <OverviewView
             stats={stats}
             limits={limits}
+            expenses={expenses}
             onSelectMonth={setCurrentMonthIndex}
             onViewChange={setCurrentView}
             selectedMonthIndex={currentMonthIndex}
+            onUpdateExpense={handleUpdateExpense}
           />
         )}
       </main>
@@ -281,8 +334,10 @@ export default function App() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         limits={limits}
+        recurringExpenses={recurringExpenses}
         onSaveSettings={handleUpdateSettings}
         onSaveLimit={handleUpdateLimit}
+        onDeleteRecurringExpense={handleDeleteRecurringExpense}
       />
 
       {/* Underlay Floating Action: LogOut buttons */}
@@ -325,6 +380,24 @@ export default function App() {
       <ReceiptScannerModal
         isOpen={isReceiptScannerOpen}
         onClose={() => setIsReceiptScannerOpen(false)}
+        onAddExpense={handleAddExpense}
+        triggerToast={triggerToast}
+      />
+
+      {/* Split transaction configuration sheet */}
+      <SplitTransactionModal
+        isOpen={isSplitModalOpen}
+        onClose={() => setIsSplitModalOpen(false)}
+        limits={limits}
+        onAddExpense={handleAddExpense}
+        triggerToast={triggerToast}
+      />
+
+      {/* Bulk recurring template auto-instantiation prompt */}
+      <RecurringChargesModal
+        isOpen={isRecurringModalOpen}
+        onClose={() => setIsRecurringModalOpen(false)}
+        recurringExpenses={recurringExpenses}
         onAddExpense={handleAddExpense}
         triggerToast={triggerToast}
       />

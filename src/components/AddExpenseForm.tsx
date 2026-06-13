@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Layers } from 'lucide-react';
 import { BudgetLimit } from '../types';
 
 interface AddExpenseFormProps {
@@ -9,16 +9,26 @@ interface AddExpenseFormProps {
     description: string;
     amount: number;
     isRecurring: boolean;
+    note?: string;
   }) => Promise<void>;
   disabled?: boolean;
   onOpenReceiptScanner?: () => void;
+  onOpenSplitModal?: () => void;
 }
 
-export function AddExpenseForm({ limits, onAddExpense, disabled = false, onOpenReceiptScanner }: AddExpenseFormProps) {
+export function AddExpenseForm({
+  limits,
+  onAddExpense,
+  disabled = false,
+  onOpenReceiptScanner,
+  onOpenSplitModal,
+}: AddExpenseFormProps) {
   const [category, setCategory] = useState(limits[0]?.category || 'Groceries');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
+  const [note, setNote] = useState('');
+  const [showNoteField, setShowNoteField] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const amountRef = useRef<HTMLInputElement>(null);
@@ -40,11 +50,14 @@ export function AddExpenseForm({ limits, onAddExpense, disabled = false, onOpenR
         description: description.trim() || category,
         amount: numAmount,
         isRecurring,
+        note: note.trim() || undefined,
       });
       // Clear fields upon success
       setDescription('');
       setAmount('');
+      setNote('');
       setIsRecurring(false);
+      setShowNoteField(false);
     } catch (err) {
       console.error('Failed to create expense:', err);
     } finally {
@@ -85,7 +98,7 @@ export function AddExpenseForm({ limits, onAddExpense, disabled = false, onOpenR
           >
             {limits.map((l) => (
               <option key={l.id} value={l.category} className="bg-[var(--bg2)] text-[var(--text)]">
-                {l.category} ({l.type})
+                {l.category.toUpperCase()} ({l.type.toUpperCase()})
               </option>
             ))}
           </select>
@@ -119,6 +132,35 @@ export function AddExpenseForm({ limits, onAddExpense, disabled = false, onOpenR
           </div>
         </div>
 
+        {/* Collapsible Notes Area */}
+        <div className="flex flex-col mt-1" id="expense-form-row-notes">
+          {!showNoteField ? (
+            <button
+              type="button"
+              onClick={() => setShowNoteField(true)}
+              className="text-[10px] font-mono tracking-wider text-[var(--accent)] hover:underline uppercase self-start cursor-pointer text-left py-1"
+              id="toggle-note-input-btn"
+            >
+              + Add Note
+            </button>
+          ) : (
+            <div className="space-y-1.5 w-full">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-[var(--text3)] font-bold">
+                Private Ledger Note
+              </label>
+              <input
+                id="expense-note-input"
+                type="text"
+                placeholder="note (optional) — e.g. dinner with family, emergency repair..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full bg-[var(--bg3)] border border-[var(--line)] text-[var(--text)] rounded-xl px-4 py-3.5 text-xs sm:text-sm focus:border-[var(--accent)] placeholder-[var(--muted)] outline-none shadow-inner"
+                autoComplete="off"
+              />
+            </div>
+          )}
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mt-2" id="expense-form-row-3">
           <label className="flex items-center gap-3 font-mono text-[11px] sm:text-xs text-[var(--text2)] uppercase tracking-wider select-none cursor-pointer">
             <input
@@ -131,7 +173,19 @@ export function AddExpenseForm({ limits, onAddExpense, disabled = false, onOpenR
             <span>Recurring Charge</span>
           </label>
 
-          <div className="flex gap-3 w-full sm:w-auto">
+          <div className="flex gap-2.5 w-full sm:w-auto">
+            {onOpenSplitModal && (
+              <button
+                type="button"
+                onClick={onOpenSplitModal}
+                id="open-split-modal-btn"
+                title="Split transaction between multi-categories"
+                className="bg-[#24211a] border border-[#ffb020]/20 hover:border-[#ffb020] rounded-xl px-5 py-3.5 text-xs font-mono uppercase text-[var(--accent)] flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 hover:bg-[#2e2920] shadow-md font-bold"
+              >
+                <Layers size={14} /> Split
+              </button>
+            )}
+
             {onOpenReceiptScanner && (
               <button
                 type="button"

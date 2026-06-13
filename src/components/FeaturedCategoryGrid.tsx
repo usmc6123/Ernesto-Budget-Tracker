@@ -53,10 +53,19 @@ export function FeaturedCategoryGrid({
           const limitVal = limitObj ? limitObj.limit : cat.fallbackLimit;
           const spentVal = spentMap[cat.dbCategory] || 0;
           
-          const isOver = spentVal > limitVal;
-          const percentage = limitVal > 0 ? Math.min((spentVal / limitVal) * 100, 100) : 0;
+          const rawPercentage = limitVal > 0 ? (spentVal / limitVal) * 100 : 0;
+          const percentage = Math.min(rawPercentage, 100);
           const remaining = limitVal - spentVal;
+          const isOver = spentVal >= limitVal;
+          const isAmber = rawPercentage >= 80 && rawPercentage < 100;
           
+          let barColor = '#10b981'; // Green
+          if (isOver) {
+            barColor = '#ef4444'; // Red
+          } else if (isAmber) {
+            barColor = '#ffb020'; // Amber
+          }
+
           // Transaction count
           const count = expenses.filter((e) => e.category === cat.dbCategory).length;
 
@@ -64,7 +73,11 @@ export function FeaturedCategoryGrid({
             <div
               key={cat.label}
               id={`featured-card-${cat.label.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`}
-              className="bg-gradient-to-b from-[#181715] to-[#0e0d0c] border border-[#2d281f] h-[160px] flex flex-col justify-between rounded-2xl p-5 hover:border-[#483c27] shadow-[0_4px_12px_rgba(0,0,0,0.5)] transition-all duration-300"
+              className={`bg-gradient-to-b from-[#181715] to-[#0e0d0c] border h-[160px] flex flex-col justify-between rounded-2xl p-5 hover:border-[#483c27] transition-all duration-300 ${
+                isAmber 
+                  ? 'border-[#ffb020]/40 shadow-[0_4px_15px_rgba(255,176,32,0.12)] bg-[#100f0d]' 
+                  : 'border-[#2d281f] shadow-[0_4px_12px_rgba(0,0,0,0.5)]'
+              }`}
             >
               {/* Card Header: Icon & Amber Category Label */}
               <div className="flex justify-between items-center">
@@ -80,7 +93,7 @@ export function FeaturedCategoryGrid({
               <div>
                 <div 
                   className={`font-mono text-2xl font-black tracking-tight`}
-                  style={{ color: isOver ? '#ef4444' : '#fcfaf2' }}
+                  style={{ color: isOver ? '#ef4444' : (isAmber ? '#ffb020' : '#fcfaf2') }}
                 >
                   {formatCurrency(spentVal)}
                 </div>
@@ -93,7 +106,7 @@ export function FeaturedCategoryGrid({
                     className="h-full rounded-full transition-all duration-500 ease-out"
                     style={{
                       width: `${percentage}%`,
-                      backgroundColor: isOver ? '#ef4444' : '#f59e0b',
+                      backgroundColor: barColor,
                     }}
                   />
                 </div>
@@ -102,7 +115,7 @@ export function FeaturedCategoryGrid({
                   <span>
                     {count} {count === 1 ? 'transaction' : 'transactions'}
                   </span>
-                  <span className={isOver ? 'text-[#ef4444] font-semibold' : ''}>
+                  <span className={isOver ? 'text-[#ef4444] font-semibold' : (isAmber ? 'text-[#ffb020] font-semibold' : '')}>
                     {isOver ? `over by ${formatCurrency(Math.abs(remaining))}` : `${formatCurrency(remaining)} left`}
                   </span>
                 </div>

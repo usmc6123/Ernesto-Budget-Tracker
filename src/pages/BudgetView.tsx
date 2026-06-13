@@ -20,14 +20,16 @@ interface BudgetViewProps {
     description: string;
     amount: number;
     isRecurring: boolean;
-    date?: string;
+    note?: string;
   }) => Promise<void>;
   onAddIncome: (income: {
     description: string;
     amount: number;
   }) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  onUpdateExpense?: (id: string, updates: Partial<Expense>) => Promise<void>;
   onOpenReceiptScanner?: () => void;
+  onOpenSplitModal?: () => void;
 }
 
 export function BudgetView({
@@ -40,7 +42,9 @@ export function BudgetView({
   onAddExpense,
   onAddIncome,
   onDeleteExpense,
+  onUpdateExpense,
   onOpenReceiptScanner,
+  onOpenSplitModal,
 }: BudgetViewProps) {
   const isReadOnly = isHistoricalMonth(currentMonthIndex);
 
@@ -111,7 +115,12 @@ export function BudgetView({
           {/* Transaction Log Input Panels (Hidden for past historical cycles) */}
           {!isReadOnly && (
             <div className="space-y-8" id="ledger-add-section">
-              <AddExpenseForm limits={limits} onAddExpense={onAddExpense} onOpenReceiptScanner={onOpenReceiptScanner} />
+              <AddExpenseForm 
+                limits={limits} 
+                onAddExpense={onAddExpense} 
+                onOpenReceiptScanner={onOpenReceiptScanner} 
+                onOpenSplitModal={onOpenSplitModal}
+              />
               <AddIncomeForm onAddIncome={onAddIncome} />
             </div>
           )}
@@ -133,6 +142,7 @@ export function BudgetView({
             expenses={expenses}
             activeMonthName={getMonthlyName(currentMonthIndex)}
             onDeleteExpense={onDeleteExpense}
+            onUpdateExpense={onUpdateExpense}
             isReadOnly={isReadOnly}
           />
         </div>
