@@ -9,7 +9,27 @@ export interface ThemeConfig {
 export const THEMES: ThemeConfig[] = [
   {
     id: 'MONOCHROME',
-    name: 'Monochrome (Default)',
+    name: 'Gold Standard (Default)',
+    properties: {
+      '--bg': '#0a0a09',
+      '--bg2': '#141310',
+      '--bg3': '#1d1b15',
+      '--bg4': '#29251c',
+      '--line': '#383428',
+      '--muted': '#5c543f',
+      '--text': '#fcfaf2',
+      '--text2': '#d9ceb4',
+      '--text3': '#8f8369',
+      '--bone': '#ffe099',
+      '--accent': '#f59e0b',
+      '--warm': '#d97706',
+      '--over': '#ef4444',
+      '--good': '#10b981',
+    },
+  },
+  {
+    id: 'CLASSIC_BONE',
+    name: 'Classic Bone & Cream',
     properties: {
       '--bg': '#080807',
       '--bg2': '#0f0f0d',
@@ -69,7 +89,7 @@ export const THEMES: ThemeConfig[] = [
   },
   {
     id: 'GOLD_STANDARD',
-    name: 'Gold Standard',
+    name: 'Amber Glow',
     properties: {
       '--bg': '#0d0c08',
       '--bg2': '#17150f',

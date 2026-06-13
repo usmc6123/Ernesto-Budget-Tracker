@@ -29,7 +29,7 @@ export function MonthNav({ currentMonth, hasDataMap, onMonthChange }: MonthNavPr
       <div
         ref={containerRef}
         id="month-navigation-bar"
-        className="max-w-4xl mx-auto flex overflow-x-auto sm:overflow-x-visible px-4 sm:px-6 scrollbar-none gap-1 sm:gap-2 scroll-smooth justify-start sm:justify-between w-full"
+        className="max-w-7xl mx-auto flex overflow-x-auto px-4 sm:px-6 scrollbar-none gap-2 scroll-smooth justify-start md:justify-between w-full"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {MONTHS.map((month, index) => {

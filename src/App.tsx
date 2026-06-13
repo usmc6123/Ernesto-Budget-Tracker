@@ -23,6 +23,7 @@ export default function App() {
   const [currentMonthIndex, setCurrentMonthIndex] = useState(new Date().getMonth()); // 0-11
   const [saveStatus, setSaveStatus] = useState<'synced' | 'saving' | 'offline'>('synced');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Core Finance State
   const [settings, setSettings] = useState<Settings>({
@@ -238,6 +239,7 @@ export default function App() {
             limits={limits}
             expenses={expenses}
             incomes={incomes}
+            stats={stats}
             onAddExpense={handleAddExpense}
             onAddIncome={handleAddIncome}
             onDeleteExpense={handleDeleteExpense}
@@ -285,8 +287,84 @@ export default function App() {
         </div>
       )}
 
+      {/* Profile Modal Overlay */}
+      {isProfileOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setIsProfileOpen(false)}
+        >
+          <div 
+            className="w-full max-w-sm bg-gradient-to-b from-[#1c1b18] to-[#0d0c0b] border border-[#302b23] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+            id="profile-modal-card"
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[10px] font-mono tracking-widest text-[#a29e96] uppercase font-bold">LEDGER OWNER</span>
+                <h4 className="font-serif text-3xl font-bold text-[#ffe099] mt-1">E. Reyes</h4>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#1c1b18] border border-[#f59e0b]/40 flex items-center justify-center font-serif text-[#ffe099] font-bold text-lg shadow-inner select-none">
+                ER
+              </div>
+            </div>
+
+            <div className="space-y-4 font-mono text-xs text-left border-y border-[#2d281f] py-4">
+              <div className="flex justify-between">
+                <span className="text-[#8c867a] uppercase tracking-wider">Account ID</span>
+                <span className="text-[#fcfaf2] font-semibold text-[11px] sm:text-xs font-mono">usmc6123@gmail.com</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#8c867a] uppercase tracking-wider">Scope Cycle</span>
+                <span className="text-[#fcfaf2] font-semibold text-[11px] sm:text-xs font-mono">2026 Fiscal Ledger</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#8c867a] uppercase tracking-wider">System Link</span>
+                <span className="text-[#10b981] font-bold text-[11px] sm:text-xs font-mono">● ONLINE / LINKED</span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(false)}
+                className="w-full bg-[#27231c] hover:bg-[#3e3524] border border-[#483c27] text-[#ffe099] rounded-xl py-3 text-xs uppercase tracking-widest font-bold transition-all cursor-pointer active:scale-95"
+              >
+                Close Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  handleLogout();
+                }}
+                className="w-full bg-gradient-to-r from-[#ef4444]/20 to-[#ef4444]/15 hover:from-[#ef4444]/35 hover:to-[#ef4444]/25 border border-[#ef4444]/40 text-[#ef4444] rounded-xl py-3 text-xs uppercase tracking-widest font-bold transition-all cursor-pointer active:scale-95 animate-pulse"
+              >
+                Disconnect Ledger
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom swaps buttons bar */}
-      <BottomNav currentView={currentView} onViewChange={setCurrentView} />
+      <BottomNav 
+        currentView={currentView} 
+        onViewChange={(view) => {
+          setCurrentView(view);
+          setIsProfileOpen(false);
+          setIsSettingsOpen(false);
+        }} 
+        onOpenSettings={() => {
+          setIsSettingsOpen(true);
+          setIsProfileOpen(false);
+        }}
+        onOpenProfile={() => {
+          setIsProfileOpen(true);
+          setIsSettingsOpen(false);
+        }}
+        isSettingsOpen={isSettingsOpen}
+        isProfileOpen={isProfileOpen}
+      />
     </div>
   );
 }
