@@ -29,7 +29,7 @@ export function MonthNav({ currentMonth, hasDataMap, onMonthChange }: MonthNavPr
       <div
         ref={containerRef}
         id="month-navigation-bar"
-        className="max-w-4xl mx-auto flex overflow-x-auto px-5 sm:px-6 scrollbar-none gap-2 scroll-smooth"
+        className="max-w-4xl mx-auto flex overflow-x-auto sm:overflow-x-visible px-4 sm:px-6 scrollbar-none gap-1 sm:gap-2 scroll-smooth justify-start sm:justify-between w-full"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {MONTHS.map((month, index) => {
@@ -42,17 +42,18 @@ export function MonthNav({ currentMonth, hasDataMap, onMonthChange }: MonthNavPr
               key={month}
               id={`month-tab-${index}`}
               onClick={() => onMonthChange(index)}
-              className={`flex-shrink-0 font-mono text-xs sm:text-sm uppercase tracking-widest px-5 py-5 border-b-3 transition-all cursor-pointer ${
+              className={`flex-shrink-0 sm:flex-1 text-center font-mono text-[10px] sm:text-xs md:text-sm uppercase tracking-wider px-3 sm:px-1 py-4 sm:py-5 border-b-[3px] transition-all cursor-pointer ${
                 active
-                  ? 'text-[var(--text)] border-[var(--accent)] font-semibold scale-105'
+                  ? 'text-[var(--text)] border-[var(--accent)] font-bold scale-105'
                   : hasData
-                  ? 'text-[var(--text2)] border-transparent font-medium hover:text-[var(--text)]'
+                  ? 'text-[var(--text2)] border-transparent font-semibold hover:text-[var(--text)]'
                   : 'text-[var(--text3)] border-transparent hover:text-[var(--text2)]'
               }`}
             >
-              {month.slice(0, 3)}
+              <span className="sm:hidden">{month.slice(0, 3)}</span>
+              <span className="hidden sm:inline">{month.slice(0, 3)}</span>
               {hasData && !active && (
-                <span className="ml-1.5 text-xs text-[var(--accent)] font-semibold">•</span>
+                <span className="ml-1 text-[10px] sm:text-xs text-[var(--accent)] font-bold">•</span>
               )}
             </button>
           );
