@@ -1,5 +1,7 @@
 # BUDGET 2026 // E. Reyes Personal Ledger
 
+[![Open in Google AI Studio](https://img.shields.io/badge/Open%20in-Google%20AI%20Studio-blue?style=for-the-badge&logo=google&logoColor=white)](https://aistudio.google.com/apps/00f77151-1164-45b4-972d-ae74891f1118?showPreview=true&showAssistant=true)
+
 BUDGET 2026 is a premium, single-user full-stack personal budget tracker ledger designed to control monthly allocations, trace auxiliary transactions, monitor specific savings targets, and visualize dynamic financial distributions.
 
 ## Tech Stack
