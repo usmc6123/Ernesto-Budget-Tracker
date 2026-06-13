@@ -1,0 +1,80 @@
+{
+  "entities": {
+    "Expense": {
+      "title": "Expense",
+      "description": "A single expense entry for the user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the expense." },
+        "monthKey": { "type": "string", "description": "The budget cycle month (YYYY-MM)." },
+        "category": { "type": "string", "description": "Budget category name." },
+        "description": { "type": "string", "description": "Expense summary descriptive text." },
+        "amount": { "type": "number", "description": "The cash amount of the expense." },
+        "date": { "type": "string", "description": "User-friendly display date (e.g. Jun 13)." },
+        "note": { "type": "string", "description": "Optional notes or details." },
+        "isRecurring": { "type": "boolean", "description": "Whether this expense is recurring." },
+        "imported": { "type": "boolean", "description": "Whether this field is imported historical data." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["id", "monthKey", "category", "description", "amount", "date", "isRecurring", "imported"]
+    },
+    "Income": {
+      "title": "Income",
+      "description": "Additional monthly income entries.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the income entry." },
+        "monthKey": { "type": "string", "description": "The budget cycle month (YYYY-MM)." },
+        "description": { "type": "string", "description": "Source or description of the income." },
+        "amount": { "type": "number", "description": "The cash amount of the income." },
+        "date": { "type": "string", "description": "User-friendly display date." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["id", "monthKey", "description", "amount", "date"]
+    },
+    "BudgetLimit": {
+      "title": "BudgetLimit",
+      "description": "Category limit overrides and types.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Matches the category name exactly." },
+        "category": { "type": "string", "description": "Category name." },
+        "limit": { "type": "number", "description": "Financial limit constraint." },
+        "type": { "type": "string", "enum": ["variable", "fixed"], "description": "Type of budget category." },
+        "color": { "type": "string", "description": "Hex color code associated with the category." }
+      },
+      "required": ["id", "category", "limit", "type", "color"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "User-wide configuration settings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Constant user-settings id." },
+        "theme": { "type": "string", "description": "Active UI display theme." },
+        "budgetCeiling": { "type": "number", "description": "Total monthly hard limit ceiling." },
+        "savingsTarget": { "type": "number", "description": "Target monthly savings goal." },
+        "defaultIncome": { "type": "number", "description": "Expected passive/salary monthly income." }
+      },
+      "required": ["id", "theme", "budgetCeiling", "savingsTarget", "defaultIncome"]
+    }
+  },
+  "firestore": {
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Collected user expenses across historical and current cycles."
+    },
+    "/income/{incomeId}": {
+      "schema": "Income",
+      "description": "Captured user income streams per cycle."
+    },
+    "/budgetLimits/{limitId}": {
+      "schema": "BudgetLimit",
+      "description": "Customized or standard categories with budget limit amounts."
+    },
+    "/settings/{settingsId}": {
+      "schema": "Settings",
+      "description": "A single settings document to manage dashboard behaviors."
+    }
+  }
+}

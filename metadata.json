@@ -1,0 +1,6 @@
+{
+  "name": "BUDGET 2026",
+  "description": "A refined, single-user personal budget ledger to trace expenses, track savings targets, and visualize financial distributions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
