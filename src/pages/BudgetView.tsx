@@ -20,12 +20,14 @@ interface BudgetViewProps {
     description: string;
     amount: number;
     isRecurring: boolean;
+    date?: string;
   }) => Promise<void>;
   onAddIncome: (income: {
     description: string;
     amount: number;
   }) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
+  onOpenReceiptScanner?: () => void;
 }
 
 export function BudgetView({
@@ -38,6 +40,7 @@ export function BudgetView({
   onAddExpense,
   onAddIncome,
   onDeleteExpense,
+  onOpenReceiptScanner,
 }: BudgetViewProps) {
   const isReadOnly = isHistoricalMonth(currentMonthIndex);
 
@@ -108,7 +111,7 @@ export function BudgetView({
           {/* Transaction Log Input Panels (Hidden for past historical cycles) */}
           {!isReadOnly && (
             <div className="space-y-8" id="ledger-add-section">
-              <AddExpenseForm limits={limits} onAddExpense={onAddExpense} />
+              <AddExpenseForm limits={limits} onAddExpense={onAddExpense} onOpenReceiptScanner={onOpenReceiptScanner} />
               <AddIncomeForm onAddIncome={onAddIncome} />
             </div>
           )}

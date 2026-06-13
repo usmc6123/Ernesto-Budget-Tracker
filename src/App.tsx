@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api, getToken, removeToken, isAuthenticated } from './lib/api';
-import { getMonthKey, MONTHS } from './lib/utils';
+import { getMonthKey, MONTH_KEYS, MONTHS, isHistoricalMonth } from './lib/utils';
 import { applyTheme } from './components/ThemeSelector';
 import { Settings, BudgetLimit, Expense, Income, YTDStats } from './types';
+import { Camera } from 'lucide-react';
 
 // Pages
 import { Login } from './pages/Login';
@@ -14,6 +15,7 @@ import { Header } from './components/Header';
 import { MonthNav } from './components/MonthNav';
 import { BottomNav } from './components/BottomNav';
 import { SettingsDrawer } from './components/SettingsDrawer';
+import { ReceiptScannerModal } from './components/ReceiptScannerModal';
 
 import { LogOut } from 'lucide-react';
 
@@ -24,6 +26,7 @@ export default function App() {
   const [saveStatus, setSaveStatus] = useState<'synced' | 'saving' | 'offline'>('synced');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isReceiptScannerOpen, setIsReceiptScannerOpen] = useState(false);
 
   // Core Finance State
   const [settings, setSettings] = useState<Settings>({
@@ -133,18 +136,34 @@ export default function App() {
     description: string;
     amount: number;
     isRecurring: boolean;
+    date?: string;
   }) => {
     setSaveStatus('saving');
     try {
       const monthKey = getMonthKey(currentMonthIndex);
-      // Auto formatting simple date to displaying month, e.g. "Jun 13"
+      
+      // Select the correct receipt-scanned date or fallback to default formatted today's date
       const now = new Date();
-      const displayDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      let displayDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (expense.date) {
+        try {
+          if (/^[A-Za-z]{3} \d{1,2}$/.test(expense.date)) {
+            displayDate = expense.date;
+          } else {
+            const d = new Date(expense.date);
+            if (!isNaN(d.getTime())) {
+              displayDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            } else {
+              displayDate = expense.date;
+            }
+          }
+        } catch {}
+      }
 
       await api.createExpense({
         monthKey,
-        date: displayDate,
         ...expense,
+        date: displayDate,
       });
 
       triggerToast('Expense registered');
@@ -243,6 +262,7 @@ export default function App() {
             onAddExpense={handleAddExpense}
             onAddIncome={handleAddIncome}
             onDeleteExpense={handleDeleteExpense}
+            onOpenReceiptScanner={() => setIsReceiptScannerOpen(true)}
           />
         ) : (
           <OverviewView
@@ -276,6 +296,38 @@ export default function App() {
           <LogOut size={14} />
         </button>
       </div>
+
+      {/* Floating Action receipt scanner button (FAB) */}
+      {!isHistoricalMonth(currentMonthIndex) && (
+        <div 
+          className="fixed bottom-[150px] right-[20px] z-30" 
+          id="receipt-scanner-fab"
+        >
+          <div className="relative group/scanner">
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2.5 py-1.5 rounded-lg bg-[#141310] border border-[#ffb020]/20 text-[var(--accent)] font-mono text-[9px] tracking-widest uppercase font-bold opacity-0 group-hover/scanner:opacity-100 transition shadow-lg pointer-events-none whitespace-nowrap">
+              SCAN RECEIPT
+            </div>
+            
+            <div className="absolute inset-0 rounded-full bg-[var(--accent)] opacity-30 animate-ping pointer-events-none" />
+            
+            <button
+              onClick={() => setIsReceiptScannerOpen(true)}
+              className="relative p-3.5 bg-[var(--accent)] border border-[var(--accent)] text-[var(--bg)] rounded-full shadow-lg hover:bg-transparent hover:text-[var(--accent)] transition-all active:scale-95 cursor-pointer flex justify-center items-center"
+              title="Receipt Scanner"
+            >
+              <Camera size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Receipt Scanner Modal overlay sheet */}
+      <ReceiptScannerModal
+        isOpen={isReceiptScannerOpen}
+        onClose={() => setIsReceiptScannerOpen(false)}
+        onAddExpense={handleAddExpense}
+        triggerToast={triggerToast}
+      />
 
       {/* Notification Toast Pills */}
       {toastMessage && (

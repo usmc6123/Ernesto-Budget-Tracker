@@ -15,6 +15,7 @@ import incomeIdHandler from './api/income/[id]';
 import statsHandler from './api/stats';
 import settingsHandler from './api/settings';
 import budgetLimitsHandler from './api/budget-limits';
+import analyzeReceiptHandler from './api/analyze-receipt';
 
 async function startServer() {
   const app = express();
@@ -51,6 +52,8 @@ async function startServer() {
 
   app.get('/api/budget-limits', budgetLimitsHandler);
   app.put('/api/budget-limits', budgetLimitsHandler);
+
+  app.post('/api/analyze-receipt', analyzeReceiptHandler);
 
   // Serve static assets or mount Vite live compilation matching env setup
   if (process.env.NODE_ENV !== 'production') {

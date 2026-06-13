@@ -107,14 +107,14 @@ export function SavingsRing({
           </div>
 
           <div className="flex justify-between items-center border-b border-[#2d281f] pb-3">
-            <span className="text-xs uppercase tracking-[0.2em] text-[#a29e96] font-bold">REAL SPENT</span>
+            <span className="text-xs uppercase tracking-[0.2em] text-[#a29e96] font-bold">SAVINGS</span>
             <span className="text-[#ef4444] font-bold tabular-nums text-base sm:text-lg" id="metric-spent-amount">
               {formatCurrency(realSpent)}
             </span>
           </div>
 
           <div className="flex justify-between items-center border-b border-[#2d281f] pb-3">
-            <span className="text-xs uppercase tracking-[0.2em] text-[#a29e96] font-bold">CARD PAYMENTS</span>
+            <span className="text-xs uppercase tracking-[0.2em] text-[#a29e96] font-bold">DEBT PAYMENTS</span>
             <span className="text-[#88837a] font-bold tabular-nums text-base sm:text-lg" id="metric-cards-amount">
               {formatCurrency(cardPayments)}
             </span>

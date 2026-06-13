@@ -43,13 +43,17 @@ async function apiFetch(endpoint: string, options: RequestInit = {}) {
   if (!response.ok) {
     const errText = await response.text();
     let errMsg = 'Operation failed';
+    let data: any = {};
     try {
-      const data = JSON.parse(errText);
+      data = JSON.parse(errText);
       errMsg = data.error || errMsg;
     } catch {
       errMsg = errText || errMsg;
     }
-    throw new Error(errMsg);
+    const err: any = new Error(errMsg);
+    if (data.rawText) err.rawText = data.rawText;
+    if (data.details) err.details = data.details;
+    throw err;
   }
 
   if (response.status === 204) {
@@ -161,6 +165,13 @@ export const api = {
     return apiFetch('/api/budget-limits', {
       method: 'PUT',
       body: JSON.stringify({ id, limit }),
+    });
+  },
+
+  async analyzeReceipt(imageData: string, mimeType: string) {
+    return apiFetch('/api/analyze-receipt', {
+      method: 'POST',
+      body: JSON.stringify({ imageData, mimeType }),
     });
   },
 };

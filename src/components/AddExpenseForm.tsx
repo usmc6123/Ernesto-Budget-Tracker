@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Camera } from 'lucide-react';
 import { BudgetLimit } from '../types';
 
 interface AddExpenseFormProps {
@@ -10,9 +11,10 @@ interface AddExpenseFormProps {
     isRecurring: boolean;
   }) => Promise<void>;
   disabled?: boolean;
+  onOpenReceiptScanner?: () => void;
 }
 
-export function AddExpenseForm({ limits, onAddExpense, disabled = false }: AddExpenseFormProps) {
+export function AddExpenseForm({ limits, onAddExpense, disabled = false, onOpenReceiptScanner }: AddExpenseFormProps) {
   const [category, setCategory] = useState(limits[0]?.category || 'Groceries');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -129,14 +131,28 @@ export function AddExpenseForm({ limits, onAddExpense, disabled = false }: AddEx
             <span>Recurring Charge</span>
           </label>
 
-          <button
-            type="submit"
-            id="submit-expense-form-btn"
-            disabled={submitting}
-            className="w-full sm:w-auto bg-[var(--accent)] border border-[var(--accent)] rounded-xl px-6 py-3.5 text-xs font-mono uppercase tracking-widest text-[var(--bg)] font-bold hover:bg-transparent hover:text-[var(--accent)] cursor-pointer transition-all active:scale-95 disabled:opacity-50 shadow-md"
-          >
-            {submitting ? 'Adding...' : '+ Add Expense'}
-          </button>
+          <div className="flex gap-3 w-full sm:w-auto">
+            {onOpenReceiptScanner && (
+              <button
+                type="button"
+                onClick={onOpenReceiptScanner}
+                id="open-receipt-scanner-btn"
+                title="Scan receipt with AI"
+                className="bg-[#24211a] border border-[#ffb020]/20 hover:border-[#ffb020] rounded-xl px-4 py-3.5 text-xs text-[var(--accent)] flex items-center justify-center cursor-pointer transition-all active:scale-95 hover:bg-[#2e2920] shadow-md"
+              >
+                <Camera size={18} />
+              </button>
+            )}
+
+            <button
+              type="submit"
+              id="submit-expense-form-btn"
+              disabled={submitting}
+              className="w-full sm:w-auto bg-[var(--accent)] border border-[var(--accent)] rounded-xl px-6 py-3.5 text-xs font-mono uppercase tracking-widest text-[var(--bg)] font-bold hover:bg-transparent hover:text-[var(--accent)] cursor-pointer transition-all active:scale-95 disabled:opacity-50 shadow-md"
+            >
+              {submitting ? 'Adding...' : '+ Add Expense'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
